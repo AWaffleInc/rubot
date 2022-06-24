@@ -3,6 +3,7 @@ export * from "./BaseCommand";
 export * from "./general/Help";
 export * from "./general/Ping";
 export * from "./general/Status";
+export * from "./general/MTS";
 
 export * from "./enroll-data/GetOverallEnroll";
 export * from "./enroll-data/GetSectionEnroll";

@@ -141,6 +141,35 @@ export namespace MutableConstants {
     export const COURSE_LISTING: ListedCourse[] = [];
     export const LISTING_LAST_SCRAPED: string = "May 15, 2022";
 
+    export const BUS_STOPS: {
+        [stopId: string]: {
+            stopName: string;
+        }
+    } = {};
+
+    export const BUS_ROUTES: {
+        [stopId: string]: {
+            routeShortName: string;
+            routeLongName: string;
+            routeColor: number;
+            routeUrl: string;
+        }
+    } = {};
+
+    export const TRIP_DATA_ID: {
+        [tripId: string]: {
+            routeId: string;
+            directionName: string;
+        }
+    } = {};
+
+    export const STOP_TIME: {
+        [tripId: string]: {
+            arrivalTime: string;
+            stopId: string;
+        }[];
+    } = {};
+
     // Term that we have section (cached) data for. We should only have one active term at any point.
     export let CACHED_DATA_TERM: string = "";
 
@@ -353,6 +382,176 @@ export namespace MutableConstants {
 
         rl.on("close", () => {
             console.info(`Done reading course listing. Data length: ${COURSE_LISTING.length}`);
+        });
+    }
+
+    /**
+     * Adds the bus stop data to the above object.
+     * @param {string} pathToFile The path to the bus stop file, if any.
+     */
+    export function initBusStops(pathToFile?: string): void {
+        const pathToRead = pathToFile ?? path.join(__dirname, "..", "..", "mts_stops.csv");
+        const readStream = createReadStream(pathToRead);
+        const rl = createInterface(readStream);
+
+        let numRead = 0;
+        let firstLinePassed = false;
+        rl.on("line", line => {
+            if (!firstLinePassed) {
+                firstLinePassed = true;
+                return;
+            }
+
+            const rawData = line.split(",");
+            if (rawData.length !== 13) {
+                console.error(`Bad line read for bus stop data; got ${rawData.length} but expected 13.`)
+                return;
+            }
+
+            const [
+                stopId,
+                stopName
+            ] = rawData;
+
+            BUS_STOPS[stopId] = { stopName };
+            numRead++;
+        });
+
+        rl.on("close", () => {
+            console.info(`Done reading bus stop data. Data length: ${numRead}`);
+        });
+    }
+
+    /**
+     * Adds the bus route data to the above object.
+     * @param {string} pathToFile The path to the bus route file, if any.
+     */
+    export function initBusRoutes(pathToFile?: string): void {
+        const pathToRead = pathToFile ?? path.join(__dirname, "..", "..", "mts_routes.csv");
+        const readStream = createReadStream(pathToRead);
+        const rl = createInterface(readStream);
+
+        let numRead = 0;
+        let firstLinePassed = false;
+        rl.on("line", line => {
+            if (!firstLinePassed) {
+                firstLinePassed = true;
+                return;
+            }
+
+            const rawData = line.split(",");
+            if (rawData.length !== 11) {
+                console.error(`Bad line read for bus route data; got ${rawData.length} but expected 11.`)
+                return;
+            }
+
+            const [
+                routeId,
+                routeShortName,
+                routeLongName, , , ,
+                routeUrl,
+                routeColor, , ,
+            ] = rawData;
+
+            BUS_ROUTES[routeId] = {
+                routeShortName,
+                routeLongName,
+                routeColor: Number.parseInt("0x" + routeColor, 16),
+                routeUrl
+            };
+            numRead++;
+        });
+
+        rl.on("close", () => {
+            console.info(`Done reading bus route data. Data length: ${numRead}`);
+        });
+    }
+
+
+    /**
+     * Adds the bus trip data to the above object.
+     * @param {string} pathToFile The path to the bus trip file, if any.
+     */
+    export function initBusTrips(pathToFile?: string): void {
+        const pathToRead = pathToFile ?? path.join(__dirname, "..", "..", "mts_trips.csv");
+        const readStream = createReadStream(pathToRead);
+        const rl = createInterface(readStream);
+
+        let numRead = 0;
+        let firstLinePassed = false;
+        rl.on("line", line => {
+            if (!firstLinePassed) {
+                firstLinePassed = true;
+                return;
+            }
+
+            const rawData = line.split(",");
+            if (rawData.length !== 11) {
+                console.error(`Bad line read for bus trip data; got ${rawData.length} but expected 11.`)
+                return;
+            }
+
+            const [
+                routeId, ,
+                tripId,
+                tripHeadsign,
+            ] = rawData;
+
+            TRIP_DATA_ID[tripId] = {
+                directionName: tripHeadsign.substring(1, tripHeadsign.length - 1),
+                routeId
+            };
+            numRead++;
+        });
+
+        rl.on("close", () => {
+            console.info(`Done reading bus trip data. Data length: ${numRead}`);
+        });
+    }
+
+
+    /**
+     * Adds the bus trip data to the above object.
+     * @param {string} pathToFile The path to the stop time file, if any.
+     */
+    export function initStopTimes(pathToFile?: string): void {
+        const pathToRead = pathToFile ?? path.join(__dirname, "..", "..", "mts_stop_times.csv");
+        const readStream = createReadStream(pathToRead);
+        const rl = createInterface(readStream);
+
+        let numRead = 0;
+        let firstLinePassed = false;
+        rl.on("line", line => {
+            if (!firstLinePassed) {
+                firstLinePassed = true;
+                return;
+            }
+
+            const rawData = line.split(",");
+            if (rawData.length !== 13) {
+                console.error(`Bad line read for stop time data; got ${rawData.length} but expected 13.`)
+                return;
+            }
+
+            const [
+                tripId,
+                arrivalTime, ,
+                stopId,
+            ] = rawData;
+
+            if (!(tripId in STOP_TIME)) {
+                STOP_TIME[tripId] = [];
+            }
+
+            STOP_TIME[tripId].push({
+                arrivalTime,
+                stopId
+            });
+            numRead++;
+        });
+
+        rl.on("close", () => {
+            console.info(`Done reading stop time data. Data length: ${numRead}`);
         });
     }
 
