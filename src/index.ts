@@ -16,10 +16,19 @@ import {JsonManager} from "./JsonManager";
     MutableConstants.initCourseListing();
     MutableConstants.initSectionData("SP22");
     JsonManager.startAll();
-    //if (config.isProd) {
-    //    await MutableConstants.initEnrollmentData();
-    //}
+    if (config.isProd) {
+        await MutableConstants.initEnrollmentData();
+    }
     console.info("All data received.");
     await bot.login();
 })();
 
+process.on("unhandledRejection", e => {
+    console.error(
+        new StringBuilder()
+            .append(`[${TimeUtilities.getDateTime(Date.now(), "America/Los_Angeles")}] ${e}`)
+            .appendLine()
+            .append("=====================================")
+            .toString()
+    );
+});
